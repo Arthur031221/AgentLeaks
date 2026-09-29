@@ -1,0 +1,47 @@
+{
+  "name": "agentleaks",
+  "version": "0.1.0",
+  "description": "Find, redact and block API keys in AI coding tool history",
+  "bin": {
+    "agentleaks": "bin/agentleaks.js"
+  },
+  "files": [
+    "bin",
+    "install.js"
+  ],
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arthur031221/agentleaks.git"
+  },
+  "homepage": "https://github.com/Arthur031221/agentleaks",
+  "bugs": {
+    "url": "https://github.com/Arthur031221/agentleaks/issues"
+  },
+  "license": "MIT",
+  "author": "Arthur",
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "keywords": [
+    "secrets",
+    "api-keys",
+    "claude-code",
+    "codex",
+    "cursor",
+    "gemini-cli",
+    "security",
+    "redaction"
+  ]
+}

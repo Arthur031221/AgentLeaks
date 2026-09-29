@@ -1,0 +1,610 @@
+# agentleaks detection rules.
+#
+# Order matters: when two rules match overlapping bytes the earlier rule wins,
+# so provider-specific rules come first and generic assignment rules last.
+#
+# Fields:
+#   id          stable identifier, lowercase with dashes
+#   provider    display name of the service
+#   description one line
+#   severity    high, medium or low (default high)
+#   regex       RE2 syntax, no lookarounds
+#   group       capture group holding the secret (0 = whole match)
+#   keywords    case-insensitive literals that must appear on the line before
+#               the regex runs. Every rule should have at least one.
+#   entropy     minimum Shannon entropy (bits per byte) of the secret
+#   allowlist   regexes that suppress a match when they match the secret
+#   verify      name of a liveness prober in internal/verify
+#   block_end   for multi-line blocks: regex that closes the block
+#
+# Keyword-anchored rules (Mistral, Together, Vercel and similar) exist for
+# providers whose keys have no distinctive prefix. They require the provider
+# name in the variable or field name on the same line. The optional \\?["']
+# fragments let the same regex match JSON that was escaped into a string,
+# which is how tool output lands in agent transcripts.
+
+version = 1
+
+# Anthropic
+
+[[rules]]
+id = "anthropic-api-key"
+provider = "Anthropic"
+description = "Anthropic API key or OAuth token"
+regex = '''\bsk-ant-[a-z]+[0-9]{2}-[A-Za-z0-9_\-]{40,}'''
+keywords = ["sk-ant-"]
+verify = "anthropic"
+
+# OpenAI
+
+[[rules]]
+id = "openai-project-key"
+provider = "OpenAI"
+description = "OpenAI project, service account or admin key"
+regex = '''\bsk-(?:proj|svcacct|admin)-[A-Za-z0-9_\-]{40,}'''
+keywords = ["sk-proj-", "sk-svcacct-", "sk-admin-"]
+verify = "openai"
+
+[[rules]]
+id = "openai-legacy-key"
+provider = "OpenAI"
+description = "OpenAI user key in the classic 51 character form"
+regex = '''\bsk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20}\b'''
+keywords = ["T3BlbkFJ"]
+verify = "openai"
+
+[[rules]]
+id = "openai-api-key"
+provider = "OpenAI"
+description = "OpenAI style sk- key without a project prefix"
+regex = '''\bsk-[A-Za-z0-9]{40,}\b'''
+keywords = ["sk-"]
+entropy = 3.5
+verify = "openai"
+
+[[rules]]
+id = "deepseek-api-key"
+provider = "DeepSeek"
+description = "DeepSeek API key assigned to a variable or field naming DeepSeek"
+regex = '''(?i)deepseek[A-Za-z0-9_\-]*(?:key|token)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?(sk-[a-f0-9]{32})\b'''
+group = 1
+keywords = ["deepseek"]
+
+# AWS
+
+[[rules]]
+id = "aws-access-key-id"
+provider = "AWS"
+description = "AWS access key ID. An identifier, but it is always paired with a secret nearby"
+severity = "medium"
+regex = '''\b((?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16})\b'''
+group = 1
+keywords = ["AKIA", "ASIA", "ABIA", "ACCA"]
+allowlist = ['''EXAMPLE$''']
+
+[[rules]]
+id = "aws-secret-access-key"
+provider = "AWS"
+description = "AWS secret access key assigned to a variable or field"
+regex = '''(?i)(?:aws[_\-]?secret[_\-]?(?:access[_\-]?)?key|secret[_\-]?access[_\-]?key)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([A-Za-z0-9/+=]{40})(?:[^A-Za-z0-9/+=]|$)'''
+group = 1
+keywords = ["aws_secret", "aws-secret", "awssecret", "secret_access_key", "secret-access-key", "secretaccesskey"]
+entropy = 3.5
+
+# GitHub
+
+[[rules]]
+id = "github-pat"
+provider = "GitHub"
+description = "GitHub personal access token (classic)"
+regex = '''\bghp_[A-Za-z0-9]{36}\b'''
+keywords = ["ghp_"]
+verify = "github"
+
+[[rules]]
+id = "github-fine-grained-pat"
+provider = "GitHub"
+description = "GitHub fine-grained personal access token"
+regex = '''\bgithub_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}\b'''
+keywords = ["github_pat_"]
+verify = "github"
+
+[[rules]]
+id = "github-oauth-token"
+provider = "GitHub"
+description = "GitHub OAuth access token"
+regex = '''\bgho_[A-Za-z0-9]{36}\b'''
+keywords = ["gho_"]
+verify = "github"
+
+[[rules]]
+id = "github-app-token"
+provider = "GitHub"
+description = "GitHub App user-to-server or server-to-server token"
+regex = '''\bgh[us]_[A-Za-z0-9]{36}\b'''
+keywords = ["ghu_", "ghs_"]
+verify = "github"
+
+[[rules]]
+id = "github-refresh-token"
+provider = "GitHub"
+description = "GitHub App refresh token"
+regex = '''\bghr_[A-Za-z0-9]{36,}\b'''
+keywords = ["ghr_"]
+verify = "github"
+
+# GitLab
+
+[[rules]]
+id = "gitlab-pat"
+provider = "GitLab"
+description = "GitLab personal access token"
+regex = '''\bglpat-[A-Za-z0-9_\-]{20,}'''
+keywords = ["glpat-"]
+
+[[rules]]
+id = "gitlab-runner-token"
+provider = "GitLab"
+description = "GitLab runner authentication token"
+regex = '''\bglrt-[A-Za-z0-9_\-]{20,}'''
+keywords = ["glrt-"]
+
+[[rules]]
+id = "gitlab-deploy-token"
+provider = "GitLab"
+description = "GitLab deploy token"
+regex = '''\bgldt-[A-Za-z0-9_\-]{20,}'''
+keywords = ["gldt-"]
+
+# Stripe
+
+[[rules]]
+id = "stripe-secret-key"
+provider = "Stripe"
+description = "Stripe secret or restricted key, live or test"
+regex = '''\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{24,}\b'''
+keywords = ["sk_live_", "sk_test_", "rk_live_", "rk_test_"]
+verify = "stripe"
+
+[[rules]]
+id = "stripe-webhook-secret"
+provider = "Stripe"
+description = "Stripe webhook signing secret"
+regex = '''\bwhsec_[A-Za-z0-9]{32,}\b'''
+keywords = ["whsec_"]
+
+# Slack
+
+[[rules]]
+id = "slack-token"
+provider = "Slack"
+description = "Slack bot, user, app, refresh or session token"
+regex = '''\bxox[baprs]-[0-9A-Za-z\-]{20,}'''
+keywords = ["xoxb-", "xoxp-", "xoxa-", "xoxr-", "xoxs-"]
+verify = "slack"
+
+[[rules]]
+id = "slack-app-token"
+provider = "Slack"
+description = "Slack app-level token"
+regex = '''\bxapp-[0-9]-[A-Za-z0-9]+-[0-9]+-[A-Za-z0-9]{32,}'''
+keywords = ["xapp-"]
+
+[[rules]]
+id = "slack-webhook-url"
+provider = "Slack"
+description = "Slack incoming webhook URL"
+regex = '''https://hooks\.slack\.com/services/T[A-Za-z0-9_]{6,}/B[A-Za-z0-9_]{6,}/[A-Za-z0-9_]{20,}'''
+keywords = ["hooks.slack.com"]
+
+# Google
+
+[[rules]]
+id = "google-api-key"
+provider = "Google"
+description = "Google API key, including Gemini API keys"
+regex = '''\b(AIza[0-9A-Za-z_\-]{35})(?:[^0-9A-Za-z_\-]|$)'''
+group = 1
+keywords = ["AIza"]
+
+[[rules]]
+id = "google-oauth-client-secret"
+provider = "Google"
+description = "Google OAuth client secret"
+regex = '''\b(GOCSPX-[A-Za-z0-9_\-]{28})(?:[^A-Za-z0-9_\-]|$)'''
+group = 1
+keywords = ["GOCSPX-"]
+
+[[rules]]
+id = "google-oauth-access-token"
+provider = "Google"
+description = "Google OAuth access token"
+regex = '''\bya29\.[0-9A-Za-z_\-]{20,}'''
+keywords = ["ya29."]
+
+[[rules]]
+id = "google-service-account"
+provider = "Google"
+description = "Google service account JSON (private_key_id field). The key body is caught by private-key"
+severity = "medium"
+regex = '''\\?"private_key_id\\?"\s*:\s*\\?"([a-f0-9]{40})\\?"'''
+group = 1
+keywords = ["private_key_id"]
+
+# Hugging Face
+
+[[rules]]
+id = "huggingface-token"
+provider = "Hugging Face"
+description = "Hugging Face user access token"
+regex = '''\bhf_[A-Za-z0-9]{30,}\b'''
+keywords = ["hf_"]
+verify = "huggingface"
+
+# Groq
+
+[[rules]]
+id = "groq-api-key"
+provider = "Groq"
+description = "Groq API key"
+regex = '''\bgsk_[A-Za-z0-9]{40,}\b'''
+keywords = ["gsk_"]
+verify = "groq"
+
+# Mistral
+
+[[rules]]
+id = "mistral-api-key"
+provider = "Mistral"
+description = "Mistral API key assigned to a variable or field naming Mistral"
+regex = '''(?i)mistral[A-Za-z0-9_\-]*(?:key|token)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([A-Za-z0-9]{32})\b'''
+group = 1
+keywords = ["mistral"]
+entropy = 3.0
+verify = "mistral"
+
+# OpenRouter
+
+[[rules]]
+id = "openrouter-api-key"
+provider = "OpenRouter"
+description = "OpenRouter API key"
+regex = '''\bsk-or-v1-[a-f0-9]{64}\b'''
+keywords = ["sk-or-v1-"]
+verify = "openrouter"
+
+# Together
+
+[[rules]]
+id = "together-api-key"
+provider = "Together"
+description = "Together API key assigned to a variable or field naming Together"
+regex = '''(?i)together[A-Za-z0-9_\-]*(?:key|token)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([a-f0-9]{64})\b'''
+group = 1
+keywords = ["together"]
+verify = "together"
+
+# Replicate
+
+[[rules]]
+id = "replicate-api-token"
+provider = "Replicate"
+description = "Replicate API token"
+regex = '''\br8_[A-Za-z0-9]{30,}\b'''
+keywords = ["r8_"]
+verify = "replicate"
+
+# Vercel
+
+[[rules]]
+id = "vercel-token"
+provider = "Vercel"
+description = "Vercel access token assigned to a variable or field naming Vercel"
+regex = '''(?i)vercel[A-Za-z0-9_\-]*(?:token|key)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([A-Za-z0-9]{24})\b'''
+group = 1
+keywords = ["vercel"]
+entropy = 3.0
+verify = "vercel"
+
+# Supabase
+
+[[rules]]
+id = "supabase-access-token"
+provider = "Supabase"
+description = "Supabase personal access token"
+regex = '''\bsbp_[a-f0-9]{40}\b'''
+keywords = ["sbp_"]
+
+[[rules]]
+id = "supabase-secret-key"
+provider = "Supabase"
+description = "Supabase secret API key"
+regex = '''\bsb_secret_[A-Za-z0-9_\-]{20,}'''
+keywords = ["sb_secret_"]
+
+# Twilio
+
+[[rules]]
+id = "twilio-api-key"
+provider = "Twilio"
+description = "Twilio API key SID. The SK prefix is too common on its own, so the word twilio must appear within 200 characters before it"
+severity = "medium"
+regex = '''(?i:twilio)[^\n]{0,200}?\b(SK[a-f0-9]{32})\b'''
+group = 1
+keywords = ["twilio"]
+
+[[rules]]
+id = "twilio-auth-token"
+provider = "Twilio"
+description = "Twilio auth token assigned to a variable or field naming Twilio"
+regex = '''(?i)twilio[A-Za-z0-9_\-]*token(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([a-f0-9]{32})\b'''
+group = 1
+keywords = ["twilio"]
+entropy = 3.0
+
+# SendGrid
+
+[[rules]]
+id = "sendgrid-api-key"
+provider = "SendGrid"
+description = "SendGrid API key"
+regex = '''\b(SG\.[A-Za-z0-9_\-]{22}\.[A-Za-z0-9_\-]{43})(?:[^A-Za-z0-9_\-]|$)'''
+group = 1
+keywords = ["SG."]
+verify = "sendgrid"
+
+# npm
+
+[[rules]]
+id = "npm-token"
+provider = "npm"
+description = "npm granular or automation access token"
+regex = '''\bnpm_[A-Za-z0-9]{36}\b'''
+keywords = ["npm_"]
+verify = "npm"
+
+[[rules]]
+id = "npm-authtoken-line"
+provider = "npm"
+description = ".npmrc _authToken line for any registry"
+regex = '''(?i)_authToken\s*=\s*["']?([A-Za-z0-9_\-.=]{20,})'''
+group = 1
+keywords = ["_authtoken"]
+entropy = 3.0
+allowlist = ['''^\$''']
+
+# PyPI
+
+[[rules]]
+id = "pypi-token"
+provider = "PyPI"
+description = "PyPI API token"
+regex = '''\bpypi-AgEIcHlwaS5vcmc[A-Za-z0-9_\-]{50,}'''
+keywords = ["pypi-AgEIcHlwaS5vcmc"]
+
+# Cryptographic material
+
+[[rules]]
+id = "private-key"
+provider = "Private key"
+description = "PEM private key block (RSA, EC, DSA, OpenSSH, PGP, PKCS8). The rule matches the header and the scanner redacts through the footer"
+regex = '''-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----'''
+keywords = ["PRIVATE KEY"]
+block_end = '''-----END (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----'''
+
+[[rules]]
+id = "age-secret-key"
+provider = "age"
+description = "age encryption secret key"
+regex = '''\bAGE-SECRET-KEY-1[A-Z0-9]{58}\b'''
+keywords = ["AGE-SECRET-KEY-1"]
+
+[[rules]]
+id = "jwt"
+provider = "JWT"
+description = "JSON Web Token"
+severity = "medium"
+regex = '''\beyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}'''
+keywords = ["eyJ"]
+entropy = 4.0
+
+# Other providers with distinctive prefixes
+
+[[rules]]
+id = "xai-api-key"
+provider = "xAI"
+description = "xAI API key"
+regex = '''\bxai-[A-Za-z0-9]{40,}\b'''
+keywords = ["xai-"]
+
+[[rules]]
+id = "perplexity-api-key"
+provider = "Perplexity"
+description = "Perplexity API key"
+regex = '''\bpplx-[A-Za-z0-9]{40,}\b'''
+keywords = ["pplx-"]
+
+[[rules]]
+id = "fireworks-api-key"
+provider = "Fireworks"
+description = "Fireworks AI API key"
+regex = '''\bfw_[A-Za-z0-9]{20,}\b'''
+keywords = ["fw_"]
+entropy = 3.5
+
+[[rules]]
+id = "digitalocean-token"
+provider = "DigitalOcean"
+description = "DigitalOcean personal access, OAuth or refresh token"
+regex = '''\bdo[opr]_v1_[a-f0-9]{64}\b'''
+keywords = ["dop_v1_", "doo_v1_", "dor_v1_"]
+
+[[rules]]
+id = "tailscale-key"
+provider = "Tailscale"
+description = "Tailscale auth, API or client key"
+regex = '''\btskey-[a-z]+-[A-Za-z0-9]{6,}-[A-Za-z0-9]{20,}'''
+keywords = ["tskey-"]
+
+[[rules]]
+id = "shopify-access-token"
+provider = "Shopify"
+description = "Shopify access token, custom app, private app or shared secret"
+regex = '''\bshp(?:at|ca|pa|ss)_[a-fA-F0-9]{32}\b'''
+keywords = ["shpat_", "shpca_", "shppa_", "shpss_"]
+
+[[rules]]
+id = "telegram-bot-token"
+provider = "Telegram"
+description = "Telegram bot token"
+regex = '''\b([0-9]{8,10}:AA[A-Za-z0-9_\-]{33})(?:[^A-Za-z0-9_\-]|$)'''
+group = 1
+keywords = [":AA"]
+
+[[rules]]
+id = "cloudflare-api-token"
+provider = "Cloudflare"
+description = "Cloudflare API token or global API key assigned to a variable or field naming Cloudflare"
+regex = '''(?i)cloudflare[A-Za-z0-9_\-]*(?:token|key)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([A-Za-z0-9_\-]{37,40})(?:[^A-Za-z0-9_\-]|$)'''
+group = 1
+keywords = ["cloudflare"]
+entropy = 3.0
+
+[[rules]]
+id = "langfuse-secret-key"
+provider = "Langfuse"
+description = "Langfuse secret key"
+regex = '''\bsk-lf-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\b'''
+keywords = ["sk-lf-"]
+
+[[rules]]
+id = "notion-integration-token"
+provider = "Notion"
+description = "Notion internal integration token"
+regex = '''\bntn_[A-Za-z0-9]{40,}\b'''
+keywords = ["ntn_"]
+
+[[rules]]
+id = "linear-api-key"
+provider = "Linear"
+description = "Linear personal API key"
+regex = '''\blin_api_[A-Za-z0-9]{40}\b'''
+keywords = ["lin_api_"]
+
+[[rules]]
+id = "postman-api-key"
+provider = "Postman"
+description = "Postman API key"
+regex = '''\bPMAK-[a-f0-9]{24}-[a-f0-9]{34}\b'''
+keywords = ["PMAK-"]
+
+[[rules]]
+id = "sentry-auth-token"
+provider = "Sentry"
+description = "Sentry organization auth token"
+regex = '''\bsntrys_[A-Za-z0-9_\-=]{40,}'''
+keywords = ["sntrys_"]
+
+[[rules]]
+id = "doppler-token"
+provider = "Doppler"
+description = "Doppler service, personal, service account or CLI token"
+regex = '''\bdp\.(?:st|pt|sa|ct)\.(?:[a-z0-9_\-]+\.)?[A-Za-z0-9]{40,}\b'''
+keywords = ["dp.st.", "dp.pt.", "dp.sa.", "dp.ct."]
+
+[[rules]]
+id = "mailgun-api-key"
+provider = "Mailgun"
+description = "Mailgun API key assigned to a variable or field naming Mailgun"
+regex = '''(?i)mailgun[A-Za-z0-9_\-]*(?:key|token)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?(key-[a-f0-9]{32})\b'''
+group = 1
+keywords = ["mailgun"]
+
+[[rules]]
+id = "datadog-api-key"
+provider = "Datadog"
+description = "Datadog API or application key assigned to a DD_ or datadog variable"
+regex = '''(?i)(?:datadog[A-Za-z0-9_\-]*|dd[_\-])(?:api|app)[_\-]?key(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([a-f0-9]{32,40})\b'''
+group = 1
+keywords = ["datadog", "dd_api_key", "dd_app_key", "dd-api-key", "dd-app-key"]
+
+[[rules]]
+id = "heroku-api-key"
+provider = "Heroku"
+description = "Heroku API key assigned to a variable or field naming Heroku"
+regex = '''(?i)heroku[A-Za-z0-9_\-]*(?:key|token)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b'''
+group = 1
+keywords = ["heroku"]
+
+[[rules]]
+id = "cohere-api-key"
+provider = "Cohere"
+description = "Cohere API key assigned to a variable or field naming Cohere"
+regex = '''(?i)cohere[A-Za-z0-9_\-]*(?:key|token)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([A-Za-z0-9]{40})\b'''
+group = 1
+keywords = ["cohere"]
+entropy = 3.0
+
+# Connection strings and URLs
+
+[[rules]]
+id = "db-connection-string"
+provider = "Database"
+description = "Database or broker URL with an embedded password"
+regex = '''\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|rediss?|amqps?|mssql)://[^\s:@/"']+:([^\s@/"']{6,})@[A-Za-z0-9.\-]+'''
+group = 1
+keywords = ["postgres://", "postgresql://", "mysql://", "mariadb://", "mongodb://", "mongodb+srv://", "redis://", "rediss://", "amqp://", "amqps://", "mssql://"]
+allowlist = [
+  '''(?i)^(?:password|passwd|pass|secret|changeme|change_me|example|placeholder|redacted|xxx+|\*+)$''',
+  '''^(?:\$|\{|<|%|\[)''',
+]
+
+[[rules]]
+id = "url-with-credentials"
+provider = "URL"
+description = "HTTP URL with an embedded password"
+severity = "medium"
+regex = '''\bhttps?://[^\s:@/"']+:([^\s@/"']{6,})@[A-Za-z0-9.\-]+'''
+group = 1
+keywords = ["http://", "https://"]
+allowlist = [
+  '''(?i)^(?:password|passwd|pass|secret|changeme|change_me|example|placeholder|redacted|xxx+|\*+)$''',
+  '''^(?:\$|\{|<|%|\[)''',
+]
+
+# Generic rules. These stay last so any provider rule above wins on overlap.
+
+[[rules]]
+id = "generic-bearer-token"
+provider = "Generic"
+description = "Bearer token in an Authorization header"
+severity = "medium"
+regex = '''(?i)\bbearer\s+([A-Za-z0-9_\-.=+/]{20,})'''
+group = 1
+keywords = ["bearer"]
+entropy = 3.5
+allowlist = [
+  '''^[A-Za-z_\-.]+$''',
+  '''(?i)^(?:your|my|sample|dummy|fake|test|demo|placeholder|example|changeme|change_me|replace|insert|todo|fixme|xxx|none|null|nil|undefined|true|false|redacted)''',
+  '''(?i)example''',
+  '''(?i)redacted''',
+]
+
+[[rules]]
+id = "generic-api-key"
+provider = "Generic"
+description = "High-entropy value assigned to a variable or field named like a key, token, secret or password"
+severity = "medium"
+regex = '''(?i)\b[A-Za-z0-9_\-]*(?:api[_\-]?key|api[_\-]?secret|secret[_\-]?key|access[_\-]?token|auth[_\-]?token|client[_\-]?secret|refresh[_\-]?token|private[_\-]?token|bearer[_\-]?token|token|secret|password|passwd)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?([A-Za-z0-9_\-/+=.]{16,})'''
+group = 1
+keywords = ["api_key", "api-key", "apikey", "token", "secret", "password", "passwd"]
+entropy = 3.5
+allowlist = [
+  '''^[A-Za-z_\-.]+$''',
+  '''^\.{0,2}/''',
+  '''^(?:\$|\{|<|%|\[)''',
+  '''(?i)^(?:your|my|sample|dummy|fake|test|demo|placeholder|example|changeme|change_me|replace|insert|todo|fixme|xxx|none|null|nil|undefined|true|false|redacted)''',
+  '''(?i)example''',
+  '''(?i)redacted''',
+  '''(?i)^(?:process\.env|os\.environ|os\.getenv|import\.meta\.env)''',
+]

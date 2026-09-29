@@ -198,7 +198,6 @@ func TestLineScannerBlockOnOneJSONLine(t *testing.T) {
 }
 
 func TestLineScannerHeaderInsideJSONStringDoesNotOpenBlock(t *testing.T) {
-	t.Skip("bug: scan.LineScanner.Next opens block state for a header inside a JSON string without an END marker on the same line, so the following JSONL records are skipped by scan and blanked by fix")
 	ls := NewLineScanner(rules.MustLoad())
 	line := `{"text":"the file starts with ` + pemHeader() + ` and continues"}`
 	r := ls.Next([]byte(line))

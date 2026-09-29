@@ -137,7 +137,6 @@ func TestRedactLineHeaderInsideJSONStringStaysValid(t *testing.T) {
 }
 
 func TestRedactLineHeaderInsideJSONStringDoesNotBlankNextRecord(t *testing.T) {
-	t.Skip("bug: scan.LineScanner opens block state on a JSONL record whose private key header has no END marker on the same line, so fix blanks every following record until an END line appears (proposed patch: in scan.LineScanner.Next do not set inBlock when the line looks like a JSON document, and in fix.fixFile never blank lines of KindJSONL or KindJSON)")
 	ls := scan.NewLineScanner(rules.MustLoad())
 	first := []byte(`{"text":"` + pemHeader() + ` is how a PEM file starts"}`)
 	second := []byte(`{"text":"unrelated ` + fakeGitHubPAT() + `"}`)
@@ -197,7 +196,6 @@ func TestOneRewritesJSONLWithBackup(t *testing.T) {
 }
 
 func TestOnePreservesTrailingNewline(t *testing.T) {
-	t.Skip("bug: fix.fixFile writes a newline only between lines, so a file that ended with a newline loses it. Claude Code and Codex append records to these JSONL files, and the next appended record would be glued onto the redacted last line (proposed patch: in fixFile read the last byte of the original file before rewriting and write a final newline when it was one)")
 	dir := t.TempDir()
 	path := filepath.Join(dir, "history.jsonl")
 	write(t, path, `{"display":"use `+fakeGitHubPAT()+`"}`+"\n", 0o600)

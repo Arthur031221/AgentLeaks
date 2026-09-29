@@ -265,15 +265,32 @@ func (s *LineScanner) Next(line []byte) LineResult {
 	}
 	res.Matches = s.set.Scan(line)
 	for _, m := range res.Matches {
-		if m.Rule.IsBlock() {
+		if m.Rule.IsBlock() && !looksLikeJSON(line) {
 			// The block closes on this line when the END marker follows the
-			// header, which is the JSON-escaped single line case.
+			// header. A header inside a JSON record never opens a block:
+			// the key body would be escaped into the same line, and a bare
+			// header there is text about a key, not a key.
 			if loc := m.Rule.BlockEnd.FindIndex(line[m.End:]); loc == nil {
 				s.inBlock = m.Rule
 			}
 		}
 	}
 	return res
+}
+
+// looksLikeJSON reports whether a line is a JSON document or array.
+func looksLikeJSON(line []byte) bool {
+	for _, c := range line {
+		switch c {
+		case ' ', '\t', '\r':
+			continue
+		case '{', '[':
+			return true
+		default:
+			return false
+		}
+	}
+	return false
 }
 
 // Reader streams r line by line and reports matches.

@@ -176,9 +176,19 @@ func fixFile(ctx context.Context, opts Options, t sources.Target, res *Result) e
 	}
 	ls := scan.NewLineScanner(opts.Rules)
 	jsonl := t.Kind == sources.KindJSONL
+	structured := jsonl || t.Kind == sources.KindJSON
 	var w io.Writer = io.Discard
 	if tmp != nil {
 		w = tmp
+	}
+	// Tools append records to these files, so a trailing newline must
+	// survive the rewrite or the next record is glued to the last line.
+	endsWithNewline := false
+	if info.Size() > 0 {
+		var last [1]byte
+		if _, err := in.ReadAt(last[:], info.Size()-1); err == nil && last[0] == '\n' {
+			endsWithNewline = true
+		}
 	}
 	bw := newBufWriter(w)
 	err = scan.ReadLines(in, opts.MaxLine, func(lineNo, offset int, line []byte) error {
@@ -186,6 +196,10 @@ func fixFile(ctx context.Context, opts Options, t sources.Target, res *Result) e
 			return ctx.Err()
 		}
 		newLine, n := RedactLine(ls, line)
+		if newLine == nil && len(line) > 0 && structured {
+			// Never blank a whole record of a structured file.
+			newLine = line
+		}
 		if n > 0 && jsonl && offset == 0 && json.Valid(line) && !json.Valid(newLine) {
 			// Never write a JSONL record that no longer parses.
 			newLine = line
@@ -201,6 +215,9 @@ func fixFile(ctx context.Context, opts Options, t sources.Target, res *Result) e
 	})
 	if err != nil {
 		return err
+	}
+	if endsWithNewline {
+		_ = bw.WriteByte('\n')
 	}
 	if opts.DryRun || res.Redacted == 0 {
 		return nil

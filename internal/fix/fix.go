@@ -191,7 +191,7 @@ func fixFile(ctx context.Context, opts Options, t sources.Target, res *Result) e
 		}
 	}
 	bw := newBufWriter(w)
-	err = scan.ReadLines(in, opts.MaxLine, func(lineNo, offset int, line []byte) error {
+	err = scan.ReadLines(in, opts.MaxLine, func(lineNo, offset, overlapLen int, line []byte) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
@@ -209,6 +209,11 @@ func fixFile(ctx context.Context, opts Options, t sources.Target, res *Result) e
 		res.Redacted += n
 		if offset == 0 && lineNo > 1 {
 			_ = bw.WriteByte('\n')
+		}
+		// This chunk repeats overlapLen bytes already written by the
+		// previous chunk of the same line, so only the new tail goes out.
+		if overlapLen > 0 && overlapLen <= len(newLine) {
+			newLine = newLine[overlapLen:]
 		}
 		bw.Write(newLine)
 		return nil

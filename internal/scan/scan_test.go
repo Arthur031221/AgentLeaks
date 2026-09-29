@@ -46,15 +46,15 @@ func target(t *testing.T, path string, kind sources.Kind) sources.Target {
 }
 
 type lineRec struct {
-	no, off int
-	text    []byte
+	no, off, overlap int
+	text             []byte
 }
 
 func collect(t *testing.T, input string, maxLine int) []lineRec {
 	t.Helper()
 	var out []lineRec
-	err := ReadLines(strings.NewReader(input), maxLine, func(no, off int, line []byte) error {
-		out = append(out, lineRec{no, off, append([]byte(nil), line...)})
+	err := ReadLines(strings.NewReader(input), maxLine, func(no, off, ov int, line []byte) error {
+		out = append(out, lineRec{no, off, ov, append([]byte(nil), line...)})
 		return nil
 	})
 	if err != nil {

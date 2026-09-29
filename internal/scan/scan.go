@@ -297,7 +297,7 @@ func looksLikeJSON(line []byte) bool {
 func Reader(ctx context.Context, opts Options, r io.Reader, fn func(line, col int, m rules.Match)) error {
 	opts = opts.fill()
 	ls := NewLineScanner(opts.Rules)
-	return ReadLines(r, opts.MaxLine, func(lineNo, offset int, line []byte) error {
+	return ReadLines(r, opts.MaxLine, func(lineNo, offset, overlapLen int, line []byte) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
@@ -311,11 +311,17 @@ func Reader(ctx context.Context, opts Options, r io.Reader, fn func(line, col in
 
 // ReadLines calls fn for each line without the trailing newline. Lines
 // longer than maxLine are delivered in chunks that share the line number,
-// with offset giving the chunk's byte position within the line.
-func ReadLines(r io.Reader, maxLine int, fn func(lineNo, offset int, line []byte) error) error {
+// with offset giving the chunk's byte position within the line. A chunk
+// after the first repeats a small overlap from the end of the previous
+// chunk so a pattern is not missed at the split point. overlapLen tells
+// the caller how many leading bytes of line are that repeated overlap, so
+// a caller rewriting the stream can skip re-emitting them. It is 0 for a
+// chunk that opens a line.
+func ReadLines(r io.Reader, maxLine int, fn func(lineNo, offset, overlapLen int, line []byte) error) error {
 	br := bufio.NewReaderSize(r, readBuf)
 	lineNo := 0
 	offset := 0
+	curOverlap := 0
 	var acc []byte
 	for {
 		frag, err := br.ReadSlice('\n')
@@ -332,13 +338,14 @@ func ReadLines(r io.Reader, maxLine int, fn func(lineNo, offset int, line []byte
 			}
 			acc = append(acc, frag...)
 			if complete {
-				if e := fn(lineNo, offset, acc); e != nil {
+				if e := fn(lineNo, offset, curOverlap, acc); e != nil {
 					return e
 				}
 				acc = acc[:0]
 				offset = 0
+				curOverlap = 0
 			} else if len(acc) >= maxLine {
-				if e := fn(lineNo, offset, acc); e != nil {
+				if e := fn(lineNo, offset, curOverlap, acc); e != nil {
 					return e
 				}
 				keep := overlap
@@ -348,6 +355,7 @@ func ReadLines(r io.Reader, maxLine int, fn func(lineNo, offset int, line []byte
 				offset += len(acc) - keep
 				copy(acc, acc[len(acc)-keep:])
 				acc = acc[:keep]
+				curOverlap = keep
 			}
 		}
 		if err != nil {
@@ -355,8 +363,11 @@ func ReadLines(r io.Reader, maxLine int, fn func(lineNo, offset int, line []byte
 				continue
 			}
 			if errors.Is(err, io.EOF) {
-				if len(acc) > 0 {
-					if e := fn(lineNo, offset, acc); e != nil {
+				// A chunk holding nothing but the overlap retained from the
+				// last forced split was already delivered in full by that
+				// split's call, so skip the duplicate trailing chunk.
+				if len(acc) > curOverlap {
+					if e := fn(lineNo, offset, curOverlap, acc); e != nil {
 						return e
 					}
 				}

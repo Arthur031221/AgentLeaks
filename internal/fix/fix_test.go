@@ -421,7 +421,6 @@ func TestFixFileMissing(t *testing.T) {
 }
 
 func TestFixFileChunkedLongLine(t *testing.T) {
-	t.Skip("bug: fix.fixFile writes every chunk of a line longer than MaxLine in full, so the 4 KiB overlap between chunks is duplicated in the output and a JSONL record longer than MaxLine is corrupted (proposed patch: have scan.ReadLines pass the overlap length to the callback, or track it in fixFile via the offset delta, and write only the bytes after the overlap for chunks with offset > 0, and do not deliver the trailing overlap-only chunk at EOF)")
 	dir := t.TempDir()
 	path := filepath.Join(dir, "long.txt")
 	line := strings.Repeat("q", 3*256<<10)

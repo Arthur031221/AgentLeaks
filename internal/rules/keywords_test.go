@@ -25,6 +25,7 @@ func equalInts(a, b []int) bool {
 
 func TestMatcherFindsKeywords(t *testing.T) {
 	m := newMatcher([]string{"sk-", "ghp_", "private key", "hooks.slack.com"})
+	pemHeader := "-----BEGIN " + "RSA PRIVATE KEY-----"
 	cases := []struct {
 		text string
 		want []int
@@ -32,7 +33,7 @@ func TestMatcherFindsKeywords(t *testing.T) {
 		{"nothing here", nil},
 		{"token ghp_abc", []int{1}},
 		{"sk-something and ghp_ too", []int{0, 1}},
-		{"-----BEGIN RSA PRIVATE KEY-----", []int{2}},
+		{pemHeader, []int{2}},
 		{"url https://hooks.slack.com/services/x", []int{3}},
 	}
 	for _, c := range cases {

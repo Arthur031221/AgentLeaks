@@ -1,0 +1,30 @@
+# Build output
+/agentleaks
+/agentleaks.exe
+/dist/
+*.test
+*.out
+
+# Coverage
+coverage.txt
+coverage.html
+*.cover
+*.coverprofile
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Demo intermediates (keep demo/demo.gif and demo/demo.tape)
+demo/*.mp4
+demo/*.webm
+
+# npm wrapper
+packaging/npm/node_modules/
+packaging/npm/bin/agentleaks-*
+packaging/npm/package-lock.json
+
+# Logs
+*.log

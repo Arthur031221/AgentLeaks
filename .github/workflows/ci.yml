@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.x"
+          cache: true
+
+      - name: gofmt
+        run: |
+          out="$(gofmt -l .)"
+          if [ -n "$out" ]; then
+            echo "files need gofmt:"
+            echo "$out"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go build
+        run: go build ./...
+
+      - name: go test
+        run: go test ./... -count=1
+
+      - name: static cross builds
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o /dev/null ./cmd/agentleaks
+          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/agentleaks
+          GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/agentleaks
+
+  prose:
+    name: prose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: no dashes used as punctuation
+        run: |
+          if grep -rn --include='*.md' -e '—' -e '–' .; then
+            echo "em-dash or en-dash found in Markdown"
+            exit 1
+          fi
+
+      - name: no attribution phrases
+        run: |
+          if grep -rni --include='*.md' -e 'generated with' -e 'co-authored' -e 'written by ai' -e 'built with claude' .; then
+            echo "forbidden phrase found in Markdown"
+            exit 1
+          fi

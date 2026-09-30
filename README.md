@@ -2,13 +2,14 @@
 
 Find, redact and block the API keys sitting in plain text inside every AI coding tool's local history.
 
+![agentleaks scan and fix on a throwaway fixture](assets/demo.gif)
+
 The first scan of the laptop this was built on found a real GitHub token in four places across Claude Code's prompt history and a session transcript, and by the end of the build the transcripts of the build itself held 15 hits of 5 distinct values. 100 files, 47 MB, one second on an idle machine.[^1]
 
 [![CI](https://github.com/Arthur031221/agentleaks/actions/workflows/ci.yml/badge.svg)](https://github.com/Arthur031221/agentleaks/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Arthur031221/agentleaks?include_prereleases)](https://github.com/Arthur031221/agentleaks/releases)
 
-![agentleaks scan, fix and guard](demo/demo.gif)
 
 ## Why
 

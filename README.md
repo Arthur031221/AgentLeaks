@@ -247,6 +247,12 @@ Every rule has a positive and a negative test. The test suite fails if a rule is
 
 **Why not import gitleaks as a library?** gitleaks v8.30 pulls in 204 Go modules and its config package alone depends on 271 packages including a WebAssembly RE2 shim. agentleaks has two direct dependencies: a TOML parser and a pure Go SQLite driver.
 
+## Related projects
+
+- [installwall](https://github.com/Arthur031221/installwall): Blocks a risky package install before an agent runs it. agentleaks cleans up a secret after it already leaked into a transcript. Different stage of the same problem.
+- [cliffhanger](https://github.com/Arthur031221/cliffhanger): Keeps an unattended agent from stopping before the work is done. Worth pairing with agentleaks fix if it runs as part of a longer unattended job.
+- [shiftgear](https://github.com/Arthur031221/shiftgear): Routes model and effort choices for the same coding agents whose history agentleaks scans.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). The short version: `go test ./...` must pass in under two minutes, `gofmt -l .` must print nothing, and no commit may contain a string that matches a rule.

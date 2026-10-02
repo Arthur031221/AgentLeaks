@@ -165,9 +165,11 @@ func positives() []fixture {
 	wrap("linear-api-key", frag("lin_api_", alnum(40, 180)))
 	wrap("postman-api-key", frag("PMAK-", hexs(24, 181), "-", hexs(34, 182)))
 	wrap("sentry-auth-token", frag("sntrys_", urls(60, 183)))
-	for i, p := range []string{"dp.st.", "dp.pt.", "dp.sa.", "dp.ct."} {
-		wrap("doppler-token", frag(p, "prd.", alnum(43, uint32(190+i))))
+	for i, p := range []string{"dp.ct.", "dp.pt.", "dp.sa.", "dp.said.", "dp.scim.", "dp.audit."} {
+		wrap("doppler-token", frag(p, alnum(40+i%5, uint32(190+i))))
 	}
+	wrap("doppler-token", frag("dp.st.", alnum(40, 196)))
+	wrap("doppler-token", frag("dp.st.", strings.Repeat("a", 35), ".", alnum(44, 197)))
 	add("mailgun-api-key", env("MAILGUN_API_KEY", frag("key-", hexs(32, 195))), frag("key-", hexs(32, 195)))
 	add("datadog-api-key", env("DD_API_KEY", hexs(32, 196)), hexs(32, 196))
 	add("datadog-api-key", env("DD_APP_KEY", hexs(40, 197)), hexs(40, 197))
@@ -270,6 +272,9 @@ func negatives() []fixture {
 		neg("postman-api-key", js("value", frag("PMAK-", hexs(10, 52)))),
 		neg("sentry-auth-token", js("value", frag("sntrys_", alnum(10, 53)))),
 		neg("doppler-token", js("value", "dp.st.short")),
+		neg("doppler-token", js("value", frag("dp.pt.prd.", alnum(40, 198)))),
+		neg("doppler-token", js("value", frag("dp.st.a.", alnum(40, 199)))),
+		neg("doppler-token", js("value", frag("dp.st.", alnum(45, 200)))),
 		neg("mailgun-api-key", env("MAILGUN_API_KEY", frag("key-", hexs(10, 54)))),
 		neg("datadog-api-key", env("DD_API_KEY", hexs(10, 55))),
 		neg("heroku-api-key", env("HEROKU_API_KEY", "not-a-uuid-at-all")),

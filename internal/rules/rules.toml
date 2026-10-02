@@ -508,9 +508,9 @@ keywords = ["sntrys_"]
 [[rules]]
 id = "doppler-token"
 provider = "Doppler"
-description = "Doppler service, personal, service account or CLI token"
-regex = '''\bdp\.(?:st|pt|sa|ct)\.(?:[a-z0-9_\-]+\.)?[A-Za-z0-9]{40,}\b'''
-keywords = ["dp.st.", "dp.pt.", "dp.sa.", "dp.ct."]
+description = "Doppler service, personal, service account, CLI, identity, SCIM or audit token"
+regex = '''\bdp\.(?:st\.(?:[a-z0-9_\-]{2,35}\.)?|(?:pt|sa|ct|said|scim|audit)\.)[A-Za-z0-9]{40,44}\b'''
+keywords = ["dp.st.", "dp.pt.", "dp.sa.", "dp.ct.", "dp.said.", "dp.scim.", "dp.audit."]
 
 [[rules]]
 id = "mailgun-api-key"

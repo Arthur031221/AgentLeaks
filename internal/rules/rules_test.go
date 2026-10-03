@@ -154,6 +154,8 @@ func positives() []fixture {
 		wrap("digitalocean-token", frag(p, hexs(64, uint32(160+i))))
 	}
 	wrap("tailscale-key", frag("tskey-auth-k", alnum(10, 165), "CNTRL-", alnum(30, 166)))
+	tailscaleKey := frag("tskey-api-", alnum(7, 167), "CNTRL-", alnum(18, 168))
+	add("tailscale-key", js("value", tailscaleKey), tailscaleKey)
 	for i, p := range []string{"shpat_", "shpca_", "shppa_", "shpss_"} {
 		wrap("shopify-access-token", frag(p, hexs(32, uint32(170+i))))
 	}
@@ -264,6 +266,7 @@ func negatives() []fixture {
 		neg("jwt", js("value", frag("eyJ", strings.Repeat("a", 20), ".eyJ", strings.Repeat("b", 20), ".", strings.Repeat("c", 20)))),
 		neg("digitalocean-token", js("value", frag("dop_v1_", hexs(10, 46)))),
 		neg("tailscale-key", js("value", "tskey-auth-short")),
+		neg("tailscale-key", js("value", frag("tskey-api-", alnum(7, 169), "CNTRL-", alnum(17, 170)))),
 		neg("shopify-access-token", js("value", frag("shpat_", hexs(10, 47)))),
 		neg("telegram-bot-token", frag(digits(5, 48), ":AA", urls(10, 49))),
 		neg("cloudflare-api-token", env("CLOUDFLARE_API_TOKEN", "xxxxxxxxx")),

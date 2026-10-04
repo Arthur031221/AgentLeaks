@@ -8,6 +8,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Detect full Sentry organization tokens and prefixed user auth tokens.
 - Match Doppler token formats and recognize identity, SCIM and audit tokens.
 - Detect Tailscale keys with the documented 18-character suffix.
 

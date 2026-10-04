@@ -501,9 +501,10 @@ keywords = ["PMAK-"]
 [[rules]]
 id = "sentry-auth-token"
 provider = "Sentry"
-description = "Sentry organization auth token"
-regex = '''\bsntrys_[A-Za-z0-9_\-=]{40,}'''
-keywords = ["sntrys_"]
+description = "Sentry organization or user auth token"
+regex = '''\b(sntryu_[a-fA-F0-9]{64}|sntrys_[A-Za-z0-9+/]+={0,2}_[A-Za-z0-9+/]{43})(?:[^A-Za-z0-9+/=]|$)'''
+group = 1
+keywords = ["sntrys_", "sntryu_"]
 
 [[rules]]
 id = "doppler-token"

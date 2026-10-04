@@ -166,7 +166,13 @@ func positives() []fixture {
 	wrap("notion-integration-token", frag("ntn_", alnum(46, 179)))
 	wrap("linear-api-key", frag("lin_api_", alnum(40, 180)))
 	wrap("postman-api-key", frag("PMAK-", hexs(24, 181), "-", hexs(34, 182)))
-	wrap("sentry-auth-token", frag("sntrys_", urls(60, 183)))
+	// Organization auth tokens contain a Base64 payload and a 43-character
+	// Base64 secret. Include characters outside the URL-safe alphabet so the
+	// fixture catches partial matches as well as missed tokens.
+	sentryOrgToken := frag("sntrys_", strings.Repeat("A", 40), "+/==", "_", strings.Repeat("B", 41), "+/")
+	add("sentry-auth-token", js("value", sentryOrgToken), sentryOrgToken)
+	sentryUserToken := frag("sntryu_", hexs(64, 184))
+	add("sentry-auth-token", js("value", sentryUserToken), sentryUserToken)
 	for i, p := range []string{"dp.ct.", "dp.pt.", "dp.sa.", "dp.said.", "dp.scim.", "dp.audit."} {
 		wrap("doppler-token", frag(p, alnum(40+i%5, uint32(190+i))))
 	}
@@ -274,6 +280,7 @@ func negatives() []fixture {
 		neg("linear-api-key", js("value", frag("lin_api_", alnum(10, 51)))),
 		neg("postman-api-key", js("value", frag("PMAK-", hexs(10, 52)))),
 		neg("sentry-auth-token", js("value", frag("sntrys_", alnum(10, 53)))),
+		neg("sentry-auth-token", js("value", frag("sntryu_", hexs(32, 185)))),
 		neg("doppler-token", js("value", "dp.st.short")),
 		neg("doppler-token", js("value", frag("dp.pt.prd.", alnum(40, 198)))),
 		neg("doppler-token", js("value", frag("dp.st.a.", alnum(40, 199)))),

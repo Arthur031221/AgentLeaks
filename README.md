@@ -1,21 +1,21 @@
-# agentleaks
+# AgentLeaks
 
 Find, redact and block the API keys sitting in plain text inside every AI coding tool's local history.
 
-![agentleaks scan and fix on a throwaway fixture](assets/demo.gif)
+![AgentLeaks scan and fix on a throwaway fixture](assets/demo.gif)
 
 The first scan of the laptop this was built on found a real GitHub token in four places across Claude Code's prompt history and a session transcript, and by the end of the build the transcripts of the build itself held 15 hits of 5 distinct values. 100 files, 47 MB, one second on an idle machine.[^1]
 
-[![CI](https://github.com/Arthur031221/agentleaks/actions/workflows/ci.yml/badge.svg)](https://github.com/Arthur031221/agentleaks/actions/workflows/ci.yml)
+[![CI](https://github.com/Arthur031221/AgentLeaks/actions/workflows/ci.yml/badge.svg)](https://github.com/Arthur031221/AgentLeaks/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/Arthur031221/agentleaks?include_prereleases)](https://github.com/Arthur031221/agentleaks/releases)
+[![Release](https://img.shields.io/github/v/release/Arthur031221/agentleaks?include_prereleases)](https://github.com/Arthur031221/AgentLeaks/releases)
 
 
 ## Why
 
 Coding agents read `.env` as a matter of course. Every secret they touch lands unencrypted in a transcript file that persists for months, gets synced by iCloud or Dropbox, and ends up in backups. Claude Code writes it to `~/.claude/projects/*.jsonl`. Codex writes it to `~/.codex/sessions`. Cursor writes it into a SQLite database. Cline, Roo, Gemini CLI, OpenCode, Aider and Copilot all keep their own copies. Anthropic closed the request to redact secrets from transcripts as not planned. Nothing cleans up what already leaked, and nothing stops the next agent from doing it again.
 
-agentleaks does three things. `scan` finds the keys across every tool. `fix` redacts them in place without corrupting the JSONL records or SQLite rows the tools depend on. `guard` installs hooks so the agent is denied the next time it reaches for `.env` or `~/.aws/credentials`.
+AgentLeaks does three things. `scan` finds the keys across every tool. `fix` redacts them in place without corrupting the JSONL records or SQLite rows the tools depend on. `guard` installs hooks so the agent is denied the next time it reaches for `.env` or `~/.aws/credentials`.
 
 ## Install
 
@@ -23,7 +23,7 @@ agentleaks does three things. `scan` finds the keys across every tool. `fix` red
 go install github.com/Arthur031221/agentleaks/cmd/agentleaks@latest
 ```
 
-Static binaries for macOS (arm64, amd64), Linux and Windows are attached to each [release](https://github.com/Arthur031221/agentleaks/releases). The Homebrew formula and the `npx agentleaks` wrapper are prepared under `packaging/` and are published with the first tagged release. No runtime dependencies, no cgo, nothing leaves your machine unless you run `verify`.
+Static binaries for macOS (arm64, amd64), Linux and Windows are attached to each [release](https://github.com/Arthur031221/AgentLeaks/releases). The Homebrew formula and the `npx agentleaks` wrapper are prepared under `packaging/` and are published with the first tagged release. No runtime dependencies, no cgo, nothing leaves your machine unless you run `verify`.
 
 ## Quick start
 
@@ -68,7 +68,7 @@ Exit code 1 means secrets were found, 0 means clean, 2 means an error. Use `--ex
 
 ## Comparison
 
-| | agentleaks | gitleaks | trufflehog | snyk/agent-scan | scrub-claude-sessions | claude-code-redaction-hooks | Sieve |
+| | AgentLeaks | gitleaks | trufflehog | snyk/agent-scan | scrub-claude-sessions | claude-code-redaction-hooks | Sieve |
 |---|---|---|---|---|---|---|---|
 | Knows where 13 AI tools keep history | yes | no | no | no | Claude Code only | Claude Code only | closed source, unclear |
 | Scans SQLite chat stores (Cursor, Copilot) | yes | no | no | no | no | no | unclear |
@@ -128,7 +128,7 @@ The backup directory contains the originals with the secrets still in them. Dele
 | Flag | Meaning |
 |---|---|
 | `--tool <ids>` | `claude-code`, `codex`, `cursor`, `gemini`, `copilot`, default all installed |
-| `--uninstall` | remove only the entries agentleaks added |
+| `--uninstall` | remove only the entries AgentLeaks added |
 | `--dry-run` | show what would change |
 | `--force` | install even when the tool's config directory is missing |
 | `--coverage` | print the coverage table below |
@@ -246,13 +246,13 @@ Every rule has a positive and a negative test. The test suite fails if a rule is
 
 **Windows?** The scanner and `fix` work on Windows and the paths are mapped to `%APPDATA%`. `guard` writes the same JSON config files, but the hook command paths have only been exercised on macOS and Linux.
 
-**Why not import gitleaks as a library?** gitleaks v8.30 pulls in 204 Go modules and its config package alone depends on 271 packages including a WebAssembly RE2 shim. agentleaks has two direct dependencies: a TOML parser and a pure Go SQLite driver.
+**Why not import gitleaks as a library?** gitleaks v8.30 pulls in 204 Go modules and its config package alone depends on 271 packages including a WebAssembly RE2 shim. AgentLeaks has two direct dependencies: a TOML parser and a pure Go SQLite driver.
 
 ## Related projects
 
-- [installwall](https://github.com/Arthur031221/installwall): Blocks a risky package install before an agent runs it. agentleaks cleans up a secret after it already leaked into a transcript. Different stage of the same problem.
-- [cliffhanger](https://github.com/Arthur031221/cliffhanger): Keeps an unattended agent from stopping before the work is done. Worth pairing with agentleaks fix if it runs as part of a longer unattended job.
-- [shiftgear](https://github.com/Arthur031221/shiftgear): Routes model and effort choices for the same coding agents whose history agentleaks scans.
+- [installwall](https://github.com/Arthur031221/installwall): Blocks a risky package install before an agent runs it. AgentLeaks cleans up a secret after it already leaked into a transcript. Different stage of the same problem.
+- [cliffhanger](https://github.com/Arthur031221/cliffhanger): Keeps an unattended agent from stopping before the work is done. Worth pairing with AgentLeaks fix if it runs as part of a longer unattended job.
+- [shiftgear](https://github.com/Arthur031221/shiftgear): Routes model and effort choices for the same coding agents whose history AgentLeaks scans.
 
 ## Contributing
 
@@ -262,4 +262,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). The short version: `go test ./...` must 
 
 MIT, copyright 2026 Arthur.
 
-[^1]: Method: agentleaks 0.1.0 with the 64 bundled rules, run on 2026-09-30 on a MacBook Air M5 (24 GB) with macOS 26, against the author's own home directory. Tools present: Claude Code, GitHub Copilot CLI and VS Code Copilot Chat. Codex, Cursor, Gemini CLI, Cline, Roo, OpenCode and Aider were not installed. First run, before this project's own sessions grew: 91 files, 36.6 MB, 0.97 s wall clock at load average 3, 8 hits, 3 distinct values. Final run: 100 files, 47.5 MB, 12 s wall clock at load average 62 with seven other builds running, 15 hits, 5 distinct values in 5 files. Reviewed by hand: one GitHub personal access token pasted into a Claude Code prompt (4 hits across `history.jsonl` and one transcript, the only real credential), one private key header in a transcript where the header regex was being discussed (3 hits, header only), and one AWS access key id plus two generic assignments that are this project's own test fixtures echoed into the build session's transcripts (8 hits). The GIF above uses a throwaway home built by `demo/setup.sh` with random keys, not this data.
+[^1]: Method: AgentLeaks 0.1.0 with the 64 bundled rules, run on 2026-09-30 on a MacBook Air M5 (24 GB) with macOS 26, against the author's own home directory. Tools present: Claude Code, GitHub Copilot CLI and VS Code Copilot Chat. Codex, Cursor, Gemini CLI, Cline, Roo, OpenCode and Aider were not installed. First run, before this project's own sessions grew: 91 files, 36.6 MB, 0.97 s wall clock at load average 3, 8 hits, 3 distinct values. Final run: 100 files, 47.5 MB, 12 s wall clock at load average 62 with seven other builds running, 15 hits, 5 distinct values in 5 files. Reviewed by hand: one GitHub personal access token pasted into a Claude Code prompt (4 hits across `history.jsonl` and one transcript, the only real credential), one private key header in a transcript where the header regex was being discussed (3 hits, header only), and one AWS access key id plus two generic assignments that are this project's own test fixtures echoed into the build session's transcripts (8 hits). The GIF above uses a throwaway home built by `demo/setup.sh` with random keys, not this data.
